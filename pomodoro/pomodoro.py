@@ -71,17 +71,63 @@ class PomodoroApp:
         seconds = self.remaining_seconds % 60
         self.timer_label.config(text=f"{minutes:02} : {seconds:02}")
 
+    def _set_work_style(self):
+        self.root.configure(bg="#FFE4E4")
+        self.status_label.config(text="工作中", bg="#FFE4E4")
+        self.timer_label.config(bg="#FFE4E4")
+        for widget in self.root.winfo_children():
+            if isinstance(widget, tk.Frame):
+                widget.configure(bg="#FFE4E4")
+
+    def _set_break_style(self):
+        self.root.configure(bg="#E4FFE4")
+        self.status_label.config(text="休息中", bg="#E4FFE4")
+        self.timer_label.config(bg="#E4FFE4")
+        for widget in self.root.winfo_children():
+            if isinstance(widget, tk.Frame):
+                widget.configure(bg="#E4FFE4")
+
     def _tick(self):
-        pass
+        if not self.running:
+            return
+        if self.remaining_seconds > 0:
+            self.remaining_seconds -= 1
+            self._update_display()
+            self.after_id = self.root.after(1000, self._tick)
+        else:
+            self.running = False
+            if self.is_work:
+                messagebox.showinfo("番茄钟", "时间到！休息一下")
+                self.is_work = False
+                self.remaining_seconds = BREAK_MINUTES * 60
+                self._set_break_style()
+            else:
+                messagebox.showinfo("番茄钟", "休息结束！开始工作")
+                self.is_work = True
+                self.remaining_seconds = WORK_MINUTES * 60
+                self._set_work_style()
+            self._update_display()
 
     def start(self):
-        pass
+        if not self.running:
+            self.running = True
+            self._tick()
 
     def pause(self):
-        pass
+        self.running = False
+        if self.after_id:
+            self.root.after_cancel(self.after_id)
+            self.after_id = None
 
     def reset(self):
-        pass
+        self.running = False
+        if self.after_id:
+            self.root.after_cancel(self.after_id)
+            self.after_id = None
+        self.is_work = True
+        self.remaining_seconds = WORK_MINUTES * 60
+        self._set_work_style()
+        self._update_display()
 
     def run(self):
         self.root.mainloop()
